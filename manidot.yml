@@ -1,0 +1,50 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+pool:
+  name: windowsAgentDotnet
+variables:
+  BuildConfiguration: release
+
+steps:
+
+- task: UseDotNet@2
+  displayName: Install sd 6.0 version
+  inputs:
+    packageType: 'sdk'
+    version: '6.0.x'
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+- task: DotNetCoreCLI@2
+  displayName: retoring application
+  inputs:
+    command: 'restore'
+    projects: '**/WebApp/*.csproj'
+- task: DotNetCoreCLI@2
+  displayName: biuld artifact and release
+  inputs:
+    command: 'build'
+    projects: '**/WebApp/*.csproj'
+    arguments: '--configuration $(BuildConfiguration)'
+- task: DotNetCoreCLI@2
+  displayName: testing the application for quality
+  inputs:
+    command: 'test'
+    projects: '**/*UnitTest*.csproj'
+    arguments: '--configuration $(BuildConfiguration)'
+- task: DotNetCoreCLI@2
+  displayName: publishartifact to the artifact staging area
+  inputs:
+    command: 'publish'
+    publishWebProjects: true
+    arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory)'
+- task: PublishBuildArtifacts@1
+  displayName: artfact transfering to the relase purpose
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
